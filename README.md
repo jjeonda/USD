@@ -1,83 +1,114 @@
-# USD
 # AAAI-2023
 
-This is the PyTorch-SSD implementation of the paper "Uncertainty-based One-phase Learning to Enhance Pseudo-Label Reliability for Semi-supervised Object Detection".
+This contains the codes for our paper 889: Uncertainty-based One-phase Learning to Enhance Pseudo-Label Reliability for Semi-supervised Object Detection
 
-## Enviornment details
-Ubuntu 18.04.5    
-CUDA 9.2   
-Python version 3.7    
-Pytorch version 1.2.0   
-torchvision 0.4.0    
+## Requirements
+code test setup: Ubuntu 16.04, NVIDIA Titan Xp with CUDA 9.0 and cuDNNv7, OpenCV 3.3.0
 
 ## Dataset
 Using VOC2007 as labeled dataset and VOC2012 as unlabeled dataset.  
 
-## Training step
-**Training**
-```
-CUDA_VISIBLE_DEVICES=[] python train_ssd_gsm_ucfilter.py  
+## Setup
+YOLOv3 website instructions (https://pjreddie.com/darknet/yolo/)
 
-# You can search for pseudo-label update point in train_ssd_gsm_ucfilter.py with keyword [update]
-CUDA_VISIBLE_DEVICES=[] python train_ssd_gsm_ucfilter.py --adaptive_filtering=True
-```
+## Dataset
+ - We tested our algorithm using PASCAL VOC dataset.
+    ' data root : /path/to/VOCdevkit/
+    ' pseudo-label root : /path/to/VOCdevkit/VOC_PL/
 
-**Training with proposed method**
+ - For SSOD (Semi-supervised learnig for object detection), we set 
+    ' VOC2007 trainset as the labeled dataset
+    ' VOC2012 trainset as the unlabeled dataset
+    ' VOC2007 testset for evaluation
+
+ -  list is included in our code
+    ' trainval_VOC2007.txt (L) + trainval_VOC2012.txt (Un)  ===> FOR SSOD : trainval_VOC0712.txt
+    ' test_VOC2007.txt
+
+
+## Training 
+Format of dataset : https://timebutt.github.io/static/how-to-train-yolov2-to-detect-custom-objects/
+
+**Prepare FS (VOC07 only) model weight**
+- backup/g-yolov3-tiny-voc07.weights
+  - trained with labeled VOC07 trainset  
+
+**Compile with proposed method**
+Option : include/darknet.h
   - FN solution (uc weighted loss)
-     - Search key word : scale
+     - #define FN
      - Weighted by uncertainty for all negative sample
   - FP solution (adaptive filtering)
-     - Search key word : adaptive
-     - If you want to compare static filtering, find the static keyword and uncommend it.
-  - Pseudo label update 
-     - Search key word : update
-     - (1) Find keyword and uncommend codes -> save update point file 
-     - (2) Pseudo label update with saved file
-     ```Shell
-     # The save folder location is set in the file
-     python wl_voc_gsm.py --trained_model=[save update point file]
-     ```
-     - (3) Resume with update file
-     ```Shell     
-     # Before train, update the pseudo label file(Annotations, txt list file) created in step (2) to voc0712.py
-     CUDA_VISIBLE_DEVICES=[] python train_ssd_gsm_ucfilter.py --resume=[save update point file]
-     ```
+     - #define FP
+  - Pseudo-label update 
+     - #define PLU_auto
      
-## Evaluation step
-**Eval mAP(%)**
+     ```Shell
+     make
+     ```
+
+**Make pseudo-label**
 ```
-python eval_voc_gsm.py --trained_model=weights/ssd_300_120000.pth
+# make pseudo-abel as inference results
+./darknet detector valid cfg/voc_pl.data cfg/g-yolov3-tiny-voc_val.cfg ./backup/g-yolov3-tiny-voc07.weights
+# move pseudo-label to pseudo-label root
+mv results/pseudo_label /path/to/VOC_PL/labels
+```
+     
+**Remove zero labeled data on the list**
+```     
+python scripts/rm_list.py 
+# input: trainval_VOC0712.txt  # output: trainval_VOC0712_rm.txt
+```
+     
+**Training**
+```Shell     
+./darknet detector train cfg/voc.data cfg/g-yolov3-tiny-voc.cfg darknet19_448.conv.23 
+# if use multiple GPUs
+./darknet detector train cfg/voc.data cfg/g-yolov3-tiny-voc.cfg darknet19_448.conv.23 -gpus 0,1,2,3
+```
+     
+**(OPTION) Set PLU_auto**
+Pseudo-label update at the point displayed on the screen 
+- e.g.) find pseudo label update weight point (local min) : 500000!! --> point: 500000 weight
+```
+./darknet detector valid cfg/voc_pl.data cfg/g-yolov3-tiny-voc_val.cfg ./backup/g-yolov3-tiny-voc_(point).weights
+# Move the updated pseudo-label to data root
+mv results/pseudo_label /path/to/VOC_PL/labels
+# Restart training from the updated point
+./darknet detector train cfg/voc.data cfg/g-yolov3-tiny-voc.cfg ./backup/g-yolov3-tiny-voc_(point).weights
+```
+     
+## Evaluation 
+```
+ ./darknet detector valid cfg/voc.data cfg/g-yolov3-tiny-voc_val.cfg /path/to/weights
 ```
 **Ensemble**
-(1) Make json file for ensemble 
+Weighted-Boxes-Fusion: implemented based on https://github.com/ZFTurbo/Weighted-Boxes-Fusion
+- Ensemble Models(3)
+  - FS 
+  - update_point
+  - trained with updated pseudo-label
+  
+- Make Model results file
 ```Shell
-# File trained only with voc2007
-python eval_voc_gsm.py --trained_model=[only07.pth]
-# File before update
-python eval_voc_gsm.py --trained_model=[save update point file]
-# File after update
-python eval_voc_gsm.py --trained_model=ssd_300_120000.pth
+./darknet detector valid cfg/voc_wbf.data cfg/g-yolov3-tiny-voc_val.cfg /path/to/weights   --> results/for_wbf_results.json
 ```
-(2) Weight box Fusion
+
+- Get WBF evaluation
 ```Shell
-cd Weighted-Boxes-Fusion/
-# Input the three files in (1) -> make results
-python wbf_3_voc.py [input1] [input2] [input3]
-```
-(3) Eval output results file
-```Shell
-cd scripts/
-python reval_voc_py3.py --voc_dir=../../data/VOCDevkit/ --year=2007 --image_set=test --classes=voc.names [output_dir]
+cd scripts/Weighted-Boxes-Fusion/
+python wbf_usd.py [input1] [input2] [input3]
 ```
 
 ## Result
 We report the ablation study.
 
 |    FN    |  FP(filtering+update)  |    Ensemble      |    mAP(%)     |
-|:--------:|:----------------------:|:----------------:|:--------------:|
-|          |                        |                  |      71.8      |
-|     √    |                        |                  |      72.3      |
-|     √    |           √            |                  |      73.4      |
-|     √    |           √            |        √         |      75.1      |
+|:--------:|:----------------------:|:----------------:|:-------------:|
+|          |                        |                  |     33.19     |
+|     √    |                        |                  |     34.53     |
+|     √    |           √            |                  |     36.53     |
+|     √    |           √            |        √         |     37.29     |
 
 
