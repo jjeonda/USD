@@ -114,7 +114,7 @@ python wbf_usd.py [input1] [input2] [input3]
 ```
 
 ## Result
-We report the ablation study.
+We report the ablation study on Pascal VOC.
 
 |    FN    |  FP(filtering+update)  |    Ensemble      |    mAP(%)     |
 |:--------:|:----------------------:|:----------------:|:-------------:|
