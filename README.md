@@ -40,7 +40,8 @@ YOLOv3 website instructions (https://pjreddie.com/darknet/yolo/)
 ## Training 
 Format of dataset : https://timebutt.github.io/static/how-to-train-yolov2-to-detect-custom-objects/
 
-**Prepare FS (VOC07 only) model weight**
+
+**Prepare FS model weight**
 - backup/g-yolov3-tiny-voc07.weights
   - trained with labeled VOC07 trainset  
 
