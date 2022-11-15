@@ -11,11 +11,11 @@ YOLOv3 website instructions (https://pjreddie.com/darknet/yolo/)
 ## Dataset 
  - We tested our algorithm using PASCAL VOC and MS COCO dataset.
  - Pascal VOC
-      ' data root : /path/to/VOCdevkit/
-      ' pseudo-label root : /path/to/VOCdevkit/VOC_PL/
+      - data root : /path/to/VOCdevkit/
+      - pseudo-label root : /path/to/VOCdevkit/VOC_PL/
  - MS COCO 
-      ' data root : /path/to/coco/
-      ' pseudo-label root : /path/to/coco_PL/
+      - data root : /path/to/coco/
+      - pseudo-label root : /path/to/coco_PL/
 
  - For SSOD (Semi-supervised learnig for object detection), we set 
    - Pascal VOC
