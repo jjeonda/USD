@@ -28,12 +28,12 @@ YOLOv3 website instructions (https://pjreddie.com/darknet/yolo/)
      - coco2014 mini-val for evaluation
 
  -  list is included in our code
-   - Pascal VOC
-     - trainval_VOC2007.txt (L) + trainval_VOC2012.txt (Un)  ===> FOR SSOD : trainval_VOC0712.txt
-     - test_VOC2007.txt
-   - MS COCO
-     - trainval_VOC2007.txt (L) + trainval_VOC2012.txt (Un)  ===> FOR SSOD : trainval_VOC0712.txt
-     - test_VOC2007.txt
+    - Pascal VOC
+      - trainval_VOC2007.txt (L) + trainval_VOC2012.txt (Un)  ===> FOR SSOD : trainval_VOC0712.txt
+      - test_VOC2007.txt
+    - MS COCO
+      - trainval_VOC2007.txt (L) + trainval_VOC2012.txt (Un)  ===> FOR SSOD : trainval_VOC0712.txt
+      - test_VOC2007.txt
     
 
 
