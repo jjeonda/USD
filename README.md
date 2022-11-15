@@ -25,15 +25,15 @@ YOLOv3 website instructions (https://pjreddie.com/darknet/yolo/)
    - MS COCO
      - coco2014 validset (co-35k) as the labeled dataset
      - coco2014 trainset (co-80k) as the unlabeled dataset
-     - coco2014 mini-val for evaluation
+     - coco2014 mini-val (coco2017 validset) for evaluation
 
  -  list is included in our code
     - Pascal VOC
       - trainval_VOC2007.txt (L) + trainval_VOC2012.txt (Un)  ===> FOR SSOD : trainval_VOC0712.txt
       - test_VOC2007.txt
     - MS COCO
-      - trainval_VOC2007.txt (L) + trainval_VOC2012.txt (Un)  ===> FOR SSOD : trainval_VOC0712.txt
-      - test_VOC2007.txt
+      - coco_val2014_35k.txt (L) + coco_train2014_80k.txt (Un)  ===> FOR SSOD : coco_trainval2014_115k.txt
+      - coco_val2017.txt
     
 
 
