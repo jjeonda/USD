@@ -19,9 +19,9 @@ YOLOv3 website instructions (https://pjreddie.com/darknet/yolo/)
 
  - For SSOD (Semi-supervised learnig for object detection), we set 
    - Pascal VOC
-    ' VOC2007 trainset as the labeled dataset
-    ' VOC2012 trainset as the unlabeled dataset
-    ' VOC2007 testset for evaluation
+     ' VOC2007 trainset as the labeled dataset
+     ' VOC2012 trainset as the unlabeled dataset
+     ' VOC2007 testset for evaluation
    - MS COCO
     ' coco2014 validset (co-35k) as the labeled dataset
     ' coco2014 trainset (co-80k) as the unlabeled dataset
