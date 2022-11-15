@@ -1,4 +1,4 @@
-# AAAI-2023
+# CVPR-2023
 
 This contains the codes for our paper 889: Uncertainty-based One-phase Learning to Enhance Pseudo-Label Reliability for Semi-supervised Object Detection
 
