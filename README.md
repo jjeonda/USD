@@ -1,126 +1,110 @@
-# CVPR-2023
+# AAAI-2023
 
-This contains the codes for our paper 889: Uncertainty-based One-phase Learning to Enhance Pseudo-Label Reliability for Semi-supervised Object Detection
+This is the PyTorch-SSD implementation of the paper "Uncertainty-based One-phase Learning to Enhance Pseudo-Label Reliability for Semi-supervised Object Detection".
 
-## Requirements
-code test setup: Ubuntu 16.04, NVIDIA Titan Xp with CUDA 9.0 and cuDNNv7, OpenCV 3.3.0
+## Enviornment details
+Ubuntu 18.04.5    
+CUDA 9.2   
+Python version 3.7    
+Pytorch version 1.2.0   
+torchvision 0.4.0    
 
-## Setup
-YOLOv3 website instructions (https://pjreddie.com/darknet/yolo/)
+## Dataset
+For Pascal VOC, use VOC2007 as labeled dataset and VOC2012 as unlabeled dataset.  
+For MS-COCO, use Co-35k(valminusminival) as labeled dataset and Co-80k(trainval) as unlabeled dataset.
+```text
+uc_ssd
+├── data
+│   ├── coco
+│   │   ├── annotations
+│   │   ├── train2017
+│   │   ├── val2017
+│   │   ├── test2017
+│   ├── VOCdevkit
+│   │   ├── VOC2007
+│   │   ├── VOC2012
+```
 
-## Dataset 
- - We tested our algorithm using PASCAL VOC and MS COCO dataset.
- - Pascal VOC
-      - data root : /path/to/VOCdevkit/
-      - pseudo-label root : /path/to/VOCdevkit/VOC_PL/
- - MS COCO 
-      - data root : /path/to/coco/
-      - pseudo-label root : /path/to/coco_PL/
+## Training step
+**Training**
+```Shell
+CUDA_VISIBLE_DEVICES=[] python train_ssd_gsm_ucfilter.py  
 
- - For SSOD (Semi-supervised learnig for object detection), we set 
-   - Pascal VOC
-     - VOC2007 trainset as the labeled dataset
-     - VOC2012 trainset as the unlabeled dataset
-     - VOC2007 testset for evaluation
-   - MS COCO
-     - coco2014 validset (co-35k) as the labeled dataset
-     - coco2014 trainset (co-80k) as the unlabeled dataset
-     - coco2014 mini-val (coco2017 validset) for evaluation
+# You can search for pseudo-label update point in train_ssd_gsm_ucfilter.py with keyword [update]
+CUDA_VISIBLE_DEVICES=[] python train_ssd_gsm_ucfilter.py --adaptive_filtering=True
 
- -  list is included in our code
-    - Pascal VOC
-      - trainval_VOC2007.txt (L) + trainval_VOC2012.txt (Un)  ===> FOR SSOD : trainval_VOC0712.txt
-      - test_VOC2007.txt
-    - MS COCO
-      - coco_val2014_35k.txt (L) + coco_train2014_80k.txt (Un)  ===> FOR SSOD : coco_trainval2014_115k.txt
-      - coco_val2017.txt
-    
+# Use COCO dataset
+CUDA_VISIBLE_DEVICES=[] python train_ssd_gsm_ucfilter.py --dataset=COCO 
+```
 
-
-## Training 
-Format of dataset : https://timebutt.github.io/static/how-to-train-yolov2-to-detect-custom-objects/
-
-
-**Prepare FS model weight**
-- backup/g-yolov3-tiny-voc07.weights
-  - trained with labeled VOC07 trainset  
-
-**Compile with proposed method**
-Option : include/darknet.h
+**Training with proposed method**
   - FN solution (uc weighted loss)
-     - #define FN
+     - Search key word : scale
      - Weighted by uncertainty for all negative sample
   - FP solution (adaptive filtering)
-     - #define FP
-  - Pseudo-label update 
-     - #define PLU_auto
-     
+     - Search key word : adaptive
+     - If you want to compare static filtering, find the static keyword and uncommend it.
+  - Pseudo label update 
+     - Search key word : update
+     - (1) Find keyword and uncommend codes -> save update point file 
+     - (2) Pseudo label update with saved file
      ```Shell
-     make
+     # The save folder location is set in the file
+     python wl_voc_gsm.py --trained_model=[save update point file]
+     # For coco dataset
+     python wl_coco.py --trained_model=[save update point file]
      ```
+     - (3) Resume with update file
+     ```Shell     
+     # Before train, update the pseudo label file(Annotations, txt list file) created in step (2) to voc0712.py
+     CUDA_VISIBLE_DEVICES=[] python train_ssd_gsm_ucfilter.py --resume=[save update point file]
+     ```
+     
+## Evaluation step
+**Eval mAP(%)**
+```Shell
+# For pascal voc
+python eval_voc_gsm.py --trained_model=weights/ssd_300_120000.pth
 
-**Make pseudo-label**
-```
-# make pseudo-abel as inference results
-./darknet detector valid cfg/voc_pl.data cfg/g-yolov3-tiny-voc_val.cfg ./backup/g-yolov3-tiny-voc07.weights
-# move pseudo-label to pseudo-label root
-mv results/pseudo_label /path/to/VOC_PL/labels
-```
-     
-**Remove zero labeled data on the list**
-```     
-python scripts/rm_list.py 
-# input: trainval_VOC0712.txt  # output: trainval_VOC0712_rm.txt
-```
-     
-**Training**
-```Shell     
-./darknet detector train cfg/voc.data cfg/g-yolov3-tiny-voc.cfg darknet19_448.conv.23 
-# if use multiple GPUs
-./darknet detector train cfg/voc.data cfg/g-yolov3-tiny-voc.cfg darknet19_448.conv.23 -gpus 0,1,2,3
-```
-     
-**(OPTION) Set PLU_auto**
-Pseudo-label update at the point displayed on the screen 
-- e.g.) find pseudo label update weight point (local min) : 500000!! --> point: 500000 weight
-```
-./darknet detector valid cfg/voc_pl.data cfg/g-yolov3-tiny-voc_val.cfg ./backup/g-yolov3-tiny-voc_(point).weights
-# Move the updated pseudo-label to data root
-mv results/pseudo_label /path/to/VOC_PL/labels
-# Restart training from the updated point
-./darknet detector train cfg/voc.data cfg/g-yolov3-tiny-voc.cfg ./backup/g-yolov3-tiny-voc_(point).weights
-```
-     
-## Evaluation 
-```
- ./darknet detector valid cfg/voc.data cfg/g-yolov3-tiny-voc_val.cfg /path/to/weights
+# For coco
+python eval_coco.py --trained_model=weights/coco_400000.pth
 ```
 **Ensemble**
-Weighted-Boxes-Fusion: implemented based on https://github.com/ZFTurbo/Weighted-Boxes-Fusion
-- Ensemble Models(3)
-  - FS 
-  - update_point
-  - trained with updated pseudo-label
-  
-- Make Model results file
+(1) Make json file for ensemble 
 ```Shell
-./darknet detector valid cfg/voc_wbf.data cfg/g-yolov3-tiny-voc_val.cfg /path/to/weights   --> results/for_wbf_results.json
-```
+# File trained only with voc2007
+# For coco dataset, use python eval_coco.py
+python eval_voc_gsm.py --trained_model=[only07.pth]
+# File before update
+python eval_voc_gsm.py --trained_model=[save update point file]
+# File after update
+python eval_voc_gsm.py --trained_model=ssd_300_120000.pth
 
-- Get WBF evaluation
+```
+(2) Weight box Fusion
 ```Shell
-cd scripts/Weighted-Boxes-Fusion/
-python wbf_usd.py [input1] [input2] [input3]
+cd Weighted-Boxes-Fusion/
+# Input the three files in (1) -> make results
+python wbf_3_voc.py [input1] [input2] [input3]
+
+# For coco dataset
+python wbf_3.py [input1] [input2] [input3]
+```
+(3) Eval output results file
+```Shell
+cd scripts/
+python reval_voc_py3.py --voc_dir=../../data/VOCDevkit/ --year=2007 --image_set=test --classes=voc.names [output_dir]
 ```
 
 ## Result
 We report the ablation study on Pascal VOC.
 
 |    FN    |  FP(filtering+update)  |    Ensemble      |    mAP(%)     |
-|:--------:|:----------------------:|:----------------:|:-------------:|
-|          |                        |                  |     33.19     |
-|     √    |                        |                  |     34.53     |
-|     √    |           √            |                  |     36.53     |
-|     √    |           √            |        √         |     37.29     |
+|:--------:|:----------------------:|:----------------:|:--------------:|
+|          |                        |                  |      71.8      |
+|     √    |                        |                  |      72.3      |
+|     √    |           √            |                  |      73.4      |
+|     √    |           √            |        √         |      75.1      |
+
 
 
